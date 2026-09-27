@@ -1,0 +1,13 @@
+/node_modules/
+# Compiled TypeScript, produced by `npm run build` and at publish time.
+/build/
+/plugin/build/
+# Gradle output for the module itself. A leading-slash pattern only matches the
+# top level, so this needs naming separately from /build/ above.
+/android/build/
+/android/.gradle/
+# The example app is scaffolded by CI; only its source is committed.
+/example/node_modules/
+/example/android/.gradle/
+/example/android/build/
+/example/android/app/build/

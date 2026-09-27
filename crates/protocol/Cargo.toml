@@ -1,0 +1,21 @@
+[package]
+name = "meerkly-protocol"
+version.workspace = true
+edition.workspace = true
+description = "Wire protocol shared by the meerkly gateway and exit-node client."
+
+# Published: `meerkly-sdk` depends on this, so it has to be on crates.io too.
+publish = true
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/meerkly/meerkly-sdk"
+homepage = "https://meerkly.com"
+readme = "README.md"
+keywords = ["meerkly", "proxy", "quic", "protocol"]
+categories = ["network-programming"]
+rust-version = "1.75"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true

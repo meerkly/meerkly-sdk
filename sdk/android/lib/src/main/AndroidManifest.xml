@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Intentionally empty. The SDK opens outbound connections, so a host app needs
+  android.permission.INTERNET — but that is the host's declaration to make, not
+  a library's to force, and it is already present in essentially every app that
+  would embed this. Declaring nothing here keeps the AAR from silently adding
+  permissions to a consumer's merged manifest.
+-->
+<manifest />

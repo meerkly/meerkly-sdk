@@ -1,0 +1,6 @@
+.gradle/
+build/
+local.properties
+# Built per target by scripts/build-android-sdk.sh, never committed — the same
+# rule the other SDKs follow for their native libs.
+lib/src/main/jniLibs/

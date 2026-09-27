@@ -1,0 +1,4 @@
+module meerklyFFI {
+    header "meerklyFFI.h"
+    export *
+}

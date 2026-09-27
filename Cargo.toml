@@ -1,0 +1,44 @@
+# meerkly-sdk — the exit-node SDK: wire protocol, Rust core, and the native
+# bindings every other language wraps.
+#
+# Public, MIT OR Apache-2.0. `meerkly-protocol` (wire types) and `meerkly-sdk`
+# (crates/client-core) are published to crates.io; the two binding crates are
+# build inputs for npm, Maven Central and the uniffi languages, and are not
+# published themselves. `publish = false` below is the default and each
+# publishable crate opts back in explicitly.
+#
+# The gateway lives in a private repo and depends on this one by git rev.
+[workspace]
+resolver = "2"
+members = [
+    "crates/protocol",
+    "crates/client-core",
+    "crates/client-ffi",
+    "crates/client-napi",
+]
+
+# Single source of truth for every SDK's published version — the release-sdks
+# workflow reads this, and sdk/expo/package.json must match it. Bump it to cut a
+# release.
+[workspace.package]
+version = "0.6.3"
+edition = "2021"
+publish = false
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+anyhow = "1"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+
+# Internal crates. The two published ones carry a `version` too — crates.io
+# rejects a path dependency without one. `meerkly-client-core` is the *local*
+# name for the crate published as `meerkly-sdk`, so every member keeps writing
+# `meerkly_client_core::` while the world sees `meerkly-sdk`.
+meerkly-protocol = { path = "crates/protocol", version = "0.6.3" }
+meerkly-client-core = { package = "meerkly-sdk", path = "crates/client-core", version = "0.6.3" }
+
+[profile.release]
+opt-level = 2

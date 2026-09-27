@@ -1,0 +1,54 @@
+{
+  "name": "@meerkly/sdk",
+  "version": "0.6.0",
+  "description": "Meerkly proxy network SDK — turn a Node/Electron app into a bandwidth-sharing exit node.",
+  "keywords": ["meerkly", "proxy", "exit-node", "bandwidth", "napi"],
+  "license": "UNLICENSED",
+  "author": "Meerkly",
+  "homepage": "https://github.com/meerkly/meerkly-sdk/tree/main/sdk/node",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meerkly/meerkly-sdk.git",
+    "directory": "sdk/node"
+  },
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "napi": {
+    "binaryName": "meerkly-sdk",
+    "targets": [
+      "x86_64-apple-darwin",
+      "aarch64-apple-darwin",
+      "x86_64-unknown-linux-gnu",
+      "aarch64-unknown-linux-gnu",
+      "x86_64-pc-windows-msvc"
+    ]
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "napi build --release --platform --manifest-path ../../crates/client-napi/Cargo.toml --output-dir .",
+    "build:debug": "napi build --platform --manifest-path ../../crates/client-napi/Cargo.toml --output-dir .",
+    "artifacts": "napi artifacts --output-dir ./artifacts --npm-dir ./npm",
+    "prepublishOnly": "napi prepublish -t npm --npm-dir ./npm"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.0.0"
+  },
+  "optionalDependencies": {
+    "@meerkly/sdk-darwin-x64": "0.6.0",
+    "@meerkly/sdk-darwin-arm64": "0.6.0",
+    "@meerkly/sdk-linux-x64-gnu": "0.6.0",
+    "@meerkly/sdk-linux-arm64-gnu": "0.6.0",
+    "@meerkly/sdk-win32-x64-msvc": "0.6.0"
+  }
+}

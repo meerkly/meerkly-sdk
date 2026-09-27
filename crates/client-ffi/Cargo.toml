@@ -1,0 +1,21 @@
+[package]
+name = "meerkly-client-ffi"
+version.workspace = true
+edition.workspace = true
+publish = false
+description = "uniffi binding over meerkly-client-core → Kotlin / Swift / Python / Go."
+
+[lib]
+name = "meerkly"
+crate-type = ["lib", "cdylib"]
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"
+
+[dependencies]
+meerkly-client-core.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true }
+uniffi = { version = "0.28", features = ["tokio", "cli"] }

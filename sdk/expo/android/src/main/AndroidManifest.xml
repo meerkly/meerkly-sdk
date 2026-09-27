@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  INTERNET and nothing else.
+
+  The foreground service is deliberately NOT declared here. A library manifest
+  merges into every app that installs this package, so declaring a specialUse
+  service here would force it on apps that only earn while in use and hand them
+  a Play Store review question they never asked for. The config plugin adds the
+  declaration when, and only when, an app opts in with `backgroundMode`.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>

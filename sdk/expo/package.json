@@ -1,0 +1,57 @@
+{
+  "name": "@meerkly/expo",
+  "version": "0.6.3",
+  "description": "Meerkly proxy network SDK for Expo and React Native — turn an Android app into a bandwidth-sharing exit node.",
+  "keywords": [
+    "meerkly",
+    "expo",
+    "react-native",
+    "proxy",
+    "exit-node",
+    "bandwidth"
+  ],
+  "license": "MIT",
+  "author": "Meerkly",
+  "homepage": "https://github.com/meerkly/meerkly-sdk/tree/main/sdk/expo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meerkly/meerkly-sdk.git",
+    "directory": "sdk/expo"
+  },
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "files": [
+    "LICENSE",
+    "README.md",
+    "android",
+    "app.plugin.js",
+    "build",
+    "expo-module.config.json",
+    "plugin/build"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p plugin/tsconfig.json",
+    "clean": "rm -rf build plugin/build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "jest",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  },
+  "devDependencies": {
+    "@expo/config-plugins": "^57.0.9",
+    "@types/jest": "^29.5.12",
+    "expo-modules-core": "^57.0.0",
+    "jest": "^29.7.0",
+    "react-native": "^0.87.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.6.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

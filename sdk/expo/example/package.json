@@ -1,0 +1,17 @@
+{
+  "name": "meerkly-expo-example",
+  "version": "0.0.1",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "android": "expo run:android",
+    "prebuild": "expo prebuild --platform android --clean"
+  },
+  "dependencies": {
+    "@meerkly/expo": "file:..",
+    "expo": "^57.0.0",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  }
+}

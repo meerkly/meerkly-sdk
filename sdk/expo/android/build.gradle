@@ -1,0 +1,35 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.meerkly.expo'
+
+// Read from package.json rather than written here. The release workflow stamps
+// the synced version into package.json; if this file carried its own copy, a
+// release would ship an npm package whose native dependency still pointed at
+// the previous AAR. One number, one place.
+def packageVersion = new groovy.json.JsonSlurper()
+    .parseText(file('../package.json').text)
+    .version
+
+version = packageVersion
+
+android {
+  namespace 'com.meerkly.expo'
+  defaultConfig {
+    versionCode 1
+    versionName packageVersion
+  }
+}
+
+dependencies {
+  // The Android SDK this module wraps, at exactly this package's version.
+  // kotlinx-coroutines-core arrives transitively: the AAR exposes it as `api`
+  // because its own suspend functions are part of its public surface.
+  //
+  // minSdk is deliberately not set here. Expo modules inherit it from the host
+  // app, as every module in node_modules does; the AAR itself requires 24, so
+  // an app below that fails the manifest merge with a message naming the cause.
+  implementation "com.meerkly:sdk:${packageVersion}"
+}

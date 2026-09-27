@@ -1,0 +1,335 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+# This repo is public, so every job runs on GitHub-hosted runners, unmetered.
+# Never point a job here at the self-hosted pool: a pull request from a fork
+# runs its own code on whatever runner the job names.
+#
+# What this cannot cover: the end-to-end smokes (an exit node connects, a real
+# request is proxied through it) need the gateway, which is private. The
+# private meerkly/meerkly repo runs those against the rev of this repo it pins.
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # Which parts of the tree actually changed. Minutes are free here, so this is
+  # only for speed. Each filter includes this workflow file, so editing CI
+  # still runs everything — otherwise a change to a job could skip the job it
+  # changed.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      rust: ${{ steps.filter.outputs.rust }}
+      node: ${{ steps.filter.outputs.node }}
+      swift: ${{ steps.filter.outputs.swift }}
+      android: ${{ steps.filter.outputs.android }}
+      expo: ${{ steps.filter.outputs.expo }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            rust:
+              - '.github/workflows/ci.yml'
+              - 'Cargo.*'
+              - 'crates/**'
+            node:
+              - '.github/workflows/ci.yml'
+              - 'Cargo.*'
+              - 'crates/protocol/**'
+              - 'crates/client-core/**'
+              - 'crates/client-napi/**'
+              - 'sdk/node/**'
+            swift:
+              - '.github/workflows/ci.yml'
+              - 'Cargo.*'
+              - 'crates/protocol/**'
+              - 'crates/client-core/**'
+              - 'crates/client-ffi/**'
+              - 'sdk/swift/**'
+            android:
+              - '.github/workflows/ci.yml'
+              - 'Cargo.*'
+              - 'crates/protocol/**'
+              - 'crates/client-core/**'
+              - 'crates/client-ffi/**'
+              - 'sdk/android/**'
+              - 'scripts/build-android-sdk.sh'
+              - 'scripts/build-ffi-bindings.sh'
+            expo:
+              - '.github/workflows/ci.yml'
+              - 'Cargo.*'
+              - 'crates/protocol/**'
+              - 'crates/client-core/**'
+              - 'crates/client-ffi/**'
+              - 'sdk/android/**'
+              - 'sdk/expo/**'
+              - 'scripts/build-android-sdk.sh'
+              - 'scripts/expo-example-build.sh'
+
+  # Rust workspace: unit tests (including client-core's rejection test against
+  # a fake gateway on loopback), and proof that meerkly-protocol still packages
+  # for crates.io.
+  rust:
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --workspace
+      - name: meerkly-protocol packages cleanly
+        run: cargo publish --dry-run -p meerkly-protocol
+
+  # Node addon (@meerkly/sdk): the same five targets release-sdks.yml builds,
+  # so a platform that stops compiling fails here rather than at release.
+  node:
+    needs: changes
+    if: needs.changes.outputs.node == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Both macOS archs build on the arm64 runner (Intel via cross-compile).
+          - { runner: macos-14, target: x86_64-apple-darwin }
+          - { runner: macos-14, target: aarch64-apple-darwin }
+          - { runner: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { runner: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu }
+          - { runner: windows-latest, target: x86_64-pc-windows-msvc }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --omit=optional --no-audit --no-fund
+        working-directory: sdk/node
+      - run: >
+          npx napi build --release --platform --target ${{ matrix.target }}
+          --manifest-path ../../crates/client-napi/Cargo.toml --output-dir .
+        working-directory: sdk/node
+
+  # Swift type-check (macOS runner has swiftc).
+  swift:
+    needs: changes
+    if: needs.changes.outputs.swift == 'true'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release -p meerkly-client-ffi
+      - run: |
+          cargo run --release -q -p meerkly-client-ffi --bin uniffi-bindgen -- \
+            generate --library target/release/libmeerkly.dylib \
+            --language swift --out-dir sdk/swift
+          swiftc -typecheck -I sdk/swift \
+            -Xcc -fmodule-map-file=sdk/swift/meerklyFFI.modulemap \
+            sdk/swift/meerkly.swift
+
+  # Android: build the AAR that gets published to Maven Central, then load it on
+  # a real Android runtime.
+  #
+  # The build half (cross-compile per ABI, regenerate the Kotlin, assemble, then
+  # verify the AAR's contents) is `scripts/build-android-sdk.sh` — the same
+  # script a developer runs and the same one release-sdks.yml runs, so what CI
+  # proves is what ships.
+  #
+  # The emulator half is the part a content check cannot cover: that JNA loads
+  # libmeerkly.so out of the packaged AAR, and that the uniffi contract
+  # checksums in the generated Kotlin match the ones compiled into that .so.
+  # Both fail at the first FFI call, and a Maven Central release cannot be
+  # withdrawn — so it is cheaper to spend the emulator minutes here than to
+  # publish a library that cannot load. It runs on every push, which is why
+  # release-sdks.yml can skip it and still be safe.
+  android:
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      # Its default package list includes "tools", which current cmdline-tools
+      # (16.0) no longer carries, so the default install fails outright.
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: cargo-ndk + NDK
+        run: |
+          cargo install cargo-ndk
+          sdkmanager --install "ndk;28.2.13676358"
+      - name: build and verify the AAR
+        # The script finds the NDK under $ANDROID_HOME/ndk itself. Pinning
+        # ANDROID_NDK_HOME here from ${{ env.ANDROID_SDK_ROOT }} would be worse
+        # than useless: if that context value is empty the path becomes
+        # /ndk/<version>, which fails the script's existence check and defeats
+        # the detection that would otherwise have worked.
+        run: ./scripts/build-android-sdk.sh
+
+      # The emulator needs several GB free for its userdata partition, and by
+      # this point the job has spent most of the runner's disk on things the
+      # emulator does not need: the NDK, three Android Rust std libraries, and
+      # a release build tree for four targets. Without this the emulator dies
+      # on startup with "Not enough space to create userdata partition".
+      #
+      # target/ is safe to delete here — the AAR is already built and verified,
+      # and the .so files it needs live in sdk/android/lib/src/main/jniLibs.
+      - name: reclaim disk for the emulator
+        run: |
+          df -h / | tail -1
+          rm -rf target
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost || true
+          df -h / | tail -1
+
+      # KVM has to be opened up explicitly or the x86_64 emulator falls back to
+      # software rendering and times out.
+      - name: enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: load the AAR on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          # The default userdata partition asks for ~7.2GB. This test installs
+          # one small APK, so a quarter of that is ample and leaves the boot
+          # well clear of the runner's disk limit.
+          disk-size: 4096M
+          # testBuildType is "release" in lib/build.gradle.kts, so this runs
+          # against the same variant the published AAR is built from rather
+          # than a debug build of it.
+          script: ./gradlew --console=plain connectedAndroidTest
+          working-directory: sdk/android
+
+      # Keep the report even when the run failed — that is when it is worth
+      # having, since the emulator step's own log does not say which assertion
+      # went wrong.
+      - name: upload the instrumented test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-instrumented-test-report
+          path: |
+            sdk/android/lib/build/reports/androidTests/
+            sdk/android/lib/build/outputs/androidTest-results/
+          if-no-files-found: warn
+
+      # connectedAndroidTest reports success when it discovers no tests at all,
+      # so a change that stopped LoadTest being packaged — a renamed source set,
+      # a testBuildType that no longer matches, a missing runner dependency —
+      # would leave this job green while proving nothing. That is the failure
+      # this guards: green because nothing ran.
+      #
+      # Deliberately not run with `if: always()`. If the emulator step already
+      # failed, that is the real error and this would only bury it.
+      - name: the emulator actually ran tests
+        run: |
+          dir=sdk/android/lib/build/outputs/androidTest-results
+          # -exec … {} + rather than a shell variable: AGP names the report
+          # after the device, so the path really is "TEST-test(AVD) - 14.xml",
+          # spaces and parentheses included, and word splitting destroys it.
+          found=$(find "$dir" -name 'TEST-*.xml' 2>/dev/null | wc -l | tr -d ' ')
+          if [ "$found" -eq 0 ]; then
+            echo "::error::connectedAndroidTest produced no test results at all"
+            exit 1
+          fi
+          # Count <testcase> elements, not the tests="N" attribute: the file
+          # carries both a <testsuites> wrapper and a <testsuite>, so summing
+          # the attribute reports double what actually ran.
+          total=$(find "$dir" -name 'TEST-*.xml' \
+            -exec grep -o '<testcase ' {} + 2>/dev/null | wc -l | tr -d ' ')
+          echo "instrumented tests run on the emulator: $total"
+          if [ "$total" -eq 0 ]; then
+            echo "::error::the emulator ran zero instrumented tests — the AAR was never actually loaded"
+            exit 1
+          fi
+
+  # Expo module (@meerkly/expo): the TypeScript API, the config plugin, and an
+  # example app built BOTH ways.
+  #
+  # The example builds are the point. The plugin's unit tests check the object
+  # it produces; only a real prebuild and a real manifest merge can show that an
+  # app which did not opt in stays free of a specialUse foreground service —
+  # which is the promise the whole design rests on, and the reason the service
+  # is not simply declared in the library manifest.
+  #
+  # The AAR is built and installed locally rather than resolved from Maven
+  # Central, so this works on a commit whose version is not published yet.
+  expo:
+    needs: changes
+    if: needs.changes.outputs.expo == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      # Its default package list includes "tools", which current cmdline-tools
+      # (16.0) no longer carries, so the default install fails outright.
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: cargo-ndk + NDK
+        run: |
+          cargo install cargo-ndk
+          sdkmanager --install "ndk;28.2.13676358"
+
+      # Catches the drift that would otherwise only show up at release: the npm
+      # package's version is what the module's Gradle uses to pick its AAR.
+      - name: the Expo package version matches the workspace
+        run: |
+          cargo_v=$(grep -m1 '^version = ' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          npm_v=$(node -p "require('./sdk/expo/package.json').version")
+          if [ "$cargo_v" != "$npm_v" ]; then
+            echo "::error::sdk/expo/package.json is $npm_v but the workspace is $cargo_v"
+            exit 1
+          fi
+          echo "both at $cargo_v"
+
+      - name: build the AAR and install it locally
+        run: |
+          ./scripts/build-android-sdk.sh
+          (cd sdk/android && ./gradlew --console=plain --no-configuration-cache publishToMavenLocal)
+
+      - name: typecheck and plugin tests
+        working-directory: sdk/expo
+        run: |
+          npm install --legacy-peer-deps --no-audit --no-fund
+          npm run typecheck
+          npm test
+
+      - name: example app, in-process (the default)
+        run: |
+          (cd sdk/expo/example && npm install --legacy-peer-deps --no-audit --no-fund)
+          ./scripts/expo-example-build.sh default
+
+      - name: example app, background mode opted in
+        run: ./scripts/expo-example-build.sh background

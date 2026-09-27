@@ -1,0 +1,18 @@
+# Kotlin binding configuration.
+#
+# Only the Kotlin generator reads this; Python, Swift, Ruby and Go keep their
+# defaults. Three things are set:
+#
+#   package_name   the generated Kotlin lands in `com.meerkly.sdk` rather than
+#                  uniffi's default `uniffi.meerkly`, so the published AAR has
+#                  one namespace and consumers write `import com.meerkly.sdk.*`.
+#   cdylib_name    the library JNA loads at runtime. The cdylib is `libmeerkly.so`
+#                  ([lib] name = "meerkly" in Cargo.toml), not uniffi's default
+#                  guess of `uniffi_meerkly`, so it has to be stated.
+#   android        emits the Android-specific loader/cleaner paths. The bindings
+#                  are published only as an AAR, so this is always correct here.
+[bindings.kotlin]
+package_name = "com.meerkly.sdk"
+cdylib_name = "meerkly"
+android = true
+android_cleaner = true

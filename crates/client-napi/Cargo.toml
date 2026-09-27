@@ -1,0 +1,19 @@
+[package]
+name = "meerkly-client-napi"
+version.workspace = true
+edition.workspace = true
+publish = false
+description = "napi-rs binding over meerkly-client-core → the @meerkly/sdk Node addon."
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+meerkly-client-core.workspace = true
+anyhow.workspace = true
+tokio = { workspace = true }
+napi = { version = "3", default-features = false, features = ["napi4", "async"] }
+napi-derive = "3"
+
+[build-dependencies]
+napi-build = "2"
