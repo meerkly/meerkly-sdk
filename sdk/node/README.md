@@ -88,4 +88,4 @@ from **this machine's IP**. No inbound ports are opened, so it works behind NAT.
 
 ## License
 
-Proprietary. © Meerkly.
+MIT.

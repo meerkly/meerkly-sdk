@@ -11,4 +11,4 @@ The protocol is versioned by its ALPN identifier, `meerkly/1`.
 
 ## Licence
 
-MIT OR Apache-2.0
+MIT

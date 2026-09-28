@@ -6,7 +6,7 @@ description = "Wire protocol shared by the meerkly gateway and exit-node client.
 
 # Published: `meerkly-sdk` depends on this, so it has to be on crates.io too.
 publish = true
-license = "MIT OR Apache-2.0"
+license = "MIT"
 repository = "https://github.com/meerkly/meerkly-sdk"
 homepage = "https://meerkly.com"
 readme = "README.md"

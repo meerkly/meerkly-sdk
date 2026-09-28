@@ -108,5 +108,4 @@ and emits only on change, so a connected app sends nothing across the bridge.
 
 ## License
 
-MIT. The Android SDK this wraps is offered as MIT or Apache-2.0, so taking MIT
-here is one of the choices that license already permits.
+MIT.

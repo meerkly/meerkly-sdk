@@ -94,4 +94,4 @@ cargo install meerkly    # or: brew install meerkly/tap/meerkly
 
 ## Licence
 
-MIT OR Apache-2.0
+MIT

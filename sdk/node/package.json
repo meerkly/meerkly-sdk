@@ -3,7 +3,7 @@
   "version": "0.6.0",
   "description": "Meerkly proxy network SDK — turn a Node/Electron app into a bandwidth-sharing exit node.",
   "keywords": ["meerkly", "proxy", "exit-node", "bandwidth", "napi"],
-  "license": "UNLICENSED",
+  "license": "MIT",
   "author": "Meerkly",
   "homepage": "https://github.com/meerkly/meerkly-sdk/tree/main/sdk/node",
   "repository": {
@@ -16,7 +16,8 @@
   "files": [
     "index.js",
     "index.d.ts",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=20"

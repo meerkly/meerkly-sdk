@@ -1,7 +1,7 @@
 # meerkly-sdk — the exit-node SDK: wire protocol, Rust core, and the native
 # bindings every other language wraps.
 #
-# Public, MIT OR Apache-2.0. `meerkly-protocol` (wire types) and `meerkly-sdk`
+# Public, MIT. `meerkly-protocol` (wire types) and `meerkly-sdk`
 # (crates/client-core) are published to crates.io; the two binding crates are
 # build inputs for npm, Maven Central and the uniffi languages, and are not
 # published themselves. `publish = false` below is the default and each

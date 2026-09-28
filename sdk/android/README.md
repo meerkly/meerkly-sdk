@@ -47,7 +47,7 @@ foreground service rather than a screen.
 | minSdk | 24 |
 | ABIs | `arm64-v8a`, `armeabi-v7a`, `x86_64` |
 | Transitive deps | JNA (`@aar`), kotlinx-coroutines-core |
-| License | MIT OR Apache-2.0 |
+| License | MIT |
 
 ## Building it locally
 

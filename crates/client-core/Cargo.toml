@@ -9,7 +9,7 @@ edition.workspace = true
 description = "The meerkly exit-node SDK. Holds one QUIC connection to a meerkly gateway and proxies traffic out through this machine's connection."
 
 publish = true
-license = "MIT OR Apache-2.0"
+license = "MIT"
 repository = "https://github.com/meerkly/meerkly-sdk"
 homepage = "https://meerkly.com"
 documentation = "https://docs.rs/meerkly-sdk"
