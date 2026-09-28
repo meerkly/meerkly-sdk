@@ -8,6 +8,11 @@
 //! DNS rebinding (resolve public for the check, private for the connect) can't
 //! slip through.
 //!
+//! Only IPv4 is dialled. Meerkly sells IPv4 exits: a dual-stack target reached
+//! over IPv6 would present the earner's v6 address instead, which is not what
+//! the customer bought and not what the gateway measured as the exit's egress.
+//! A target with no IPv4 address fails rather than falling back.
+//!
 //! A dev/test escape hatch, `MEERKLY_ALLOW_PRIVATE_TARGETS=1`, disables the
 //! filter so the local-target smoke tests can run. It only ever exposes the
 //! machine that sets it, so it is safe as an opt-in.
@@ -26,6 +31,13 @@ pub async fn connect(host: &str, port: u16) -> std::io::Result<TcpStream> {
     let addrs: Vec<SocketAddr> = tokio::net::lookup_host((host, port)).await?.collect();
     if addrs.is_empty() {
         return Err(Error::new(ErrorKind::NotFound, "host did not resolve"));
+    }
+    let addrs = ipv4_only(addrs);
+    if addrs.is_empty() {
+        return Err(Error::new(
+            ErrorKind::AddrNotAvailable,
+            "destination has no IPv4 address",
+        ));
     }
 
     let candidates: Vec<SocketAddr> = if allow_private() {
@@ -49,6 +61,20 @@ pub async fn connect(host: &str, port: u16) -> std::io::Result<TcpStream> {
         }
     }
     Err(last_err.unwrap_or_else(|| Error::new(ErrorKind::AddrNotAvailable, "no address connected")))
+}
+
+/// Keep only the IPv4 addresses, in resolver order. An IPv4-mapped v6 address
+/// is kept as the IPv4 address it carries, so it is dialled over v4.
+fn ipv4_only(addrs: Vec<SocketAddr>) -> Vec<SocketAddr> {
+    addrs
+        .into_iter()
+        .filter_map(|a| match a.ip() {
+            IpAddr::V4(_) => Some(a),
+            IpAddr::V6(v6) => v6
+                .to_ipv4_mapped()
+                .map(|v4| SocketAddr::new(IpAddr::V4(v4), a.port())),
+        })
+        .collect()
 }
 
 /// Whether an IP must not be dialled: anything that is not a routable public
@@ -157,5 +183,19 @@ mod tests {
         ] {
             assert!(!is_blocked(ip(s)), "{s} should be allowed");
         }
+    }
+
+    #[test]
+    fn dials_ipv4_only() {
+        let addr = |s: &str| SocketAddr::from_str(s).unwrap();
+        assert_eq!(
+            ipv4_only(vec![
+                addr("[2606:4700::6810:84e5]:443"),
+                addr("104.16.132.229:443"),
+                addr("[::ffff:93.184.216.34]:443"),
+            ]),
+            vec![addr("104.16.132.229:443"), addr("93.184.216.34:443")]
+        );
+        assert!(ipv4_only(vec![addr("[2606:4700:4700::1111]:443")]).is_empty());
     }
 }
