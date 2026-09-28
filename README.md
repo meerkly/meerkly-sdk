@@ -107,9 +107,12 @@ Every SDK releases at one synced version: `[workspace.package] version` in
 `Cargo.toml`. `sdk/expo/package.json` must match it.
 
 1. Bump both, commit, and push to `main`.
-2. Push the tag `v<X.Y.Z>`.
-3. Approve the `release` environment when `release-sdks` asks, once before the
-   builds and once before publishing.
+2. Push the tag `v<X.Y.Z>`. `release-sdks` builds every SDK on every platform,
+   and publishes to npm, crates.io and Maven Central only if all of them
+   succeed. There is no manual step.
+
+Only repo admins can push `v*` tags, and the publishing secrets are only
+released to runs started by one.
 
 See the comments at the top of
 [`.github/workflows/release-sdks.yml`](.github/workflows/release-sdks.yml) for

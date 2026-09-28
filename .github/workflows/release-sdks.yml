@@ -34,12 +34,15 @@ name: release-sdks
 # This repo is public, so every runner below is GitHub-hosted and unmetered.
 # Never point a job here at the self-hosted pool: fork PRs can run code on it.
 #
-# Publishing secrets are environment secrets on `release`, which requires a
-# reviewer and only deploys from `v*` tags. `preflight` and every `*-publish`
-# job run in that environment, so a release waits for approval twice: once
-# before the builds start, once before anything is uploaded. A workflow_dispatch
-# from a branch is therefore a dry run: the environment refuses the branch, so
-# preflight fails, the builds still run, and nothing is published.
+# Pushing a `v*` tag releases with no manual step. What guards the secrets is
+# not an approval but who can start a release:
+#   * the publishing secrets are environment secrets on `release`, which only
+#     deploys from `v*` tags, so CI on branches and fork PRs never sees them;
+#   * a tag ruleset lets only repo admins create, move or delete `v*` tags.
+# `preflight` and every `*-publish` job run in that environment. A
+# workflow_dispatch from a branch is therefore a dry run: the environment
+# refuses the branch, so preflight fails, the builds still run, and nothing is
+# published.
 on:
   workflow_dispatch:
   push:
