@@ -21,7 +21,7 @@ members = [
 # workflow reads this, and sdk/expo/package.json must match it. Bump it to cut a
 # release.
 [workspace.package]
-version = "0.6.5"
+version = "1.0.0"
 edition = "2021"
 publish = false
 
@@ -37,8 +37,8 @@ tracing = "0.1"
 # rejects a path dependency without one. `meerkly-client-core` is the *local*
 # name for the crate published as `meerkly-sdk`, so every member keeps writing
 # `meerkly_client_core::` while the world sees `meerkly-sdk`.
-meerkly-protocol = { path = "crates/protocol", version = "0.6.5" }
-meerkly-client-core = { package = "meerkly-sdk", path = "crates/client-core", version = "0.6.5" }
+meerkly-protocol = { path = "crates/protocol", version = "1.0.0" }
+meerkly-client-core = { package = "meerkly-sdk", path = "crates/client-core", version = "1.0.0" }
 
 [profile.release]
 opt-level = 2

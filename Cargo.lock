@@ -1087,7 +1087,7 @@ dependencies = [
 
 [[package]]
 name = "meerkly-client-ffi"
-version = "0.6.5"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "meerkly-sdk",
@@ -1098,7 +1098,7 @@ dependencies = [
 
 [[package]]
 name = "meerkly-client-napi"
-version = "0.6.5"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "meerkly-sdk",
@@ -1136,7 +1136,7 @@ dependencies = [
 
 [[package]]
 name = "meerkly-protocol"
-version = "0.6.5"
+version = "1.0.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1146,7 +1146,7 @@ dependencies = [
 
 [[package]]
 name = "meerkly-sdk"
-version = "0.6.5"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "meerkly-protocol",
