@@ -44,6 +44,10 @@ struct Inner {
     shutdown_tx: watch::Sender<bool>,
     started: AtomicBool,
     rejection: RejectionSlot,
+    /// The host's transport; see [`ProxyClient::set_network`]. Lives here, not
+    /// in the supervisor, so it can be set before `start()` and survives the
+    /// supervisor's reconnects.
+    network_tx: watch::Sender<Option<String>>,
 }
 
 /// A handle to a single exit-node client.
@@ -96,6 +100,7 @@ impl ProxyClient {
                 shutdown_tx,
                 started: AtomicBool::new(false),
                 rejection: RejectionSlot::default(),
+                network_tx: watch::channel(None).0,
             }),
         })
     }
@@ -121,10 +126,13 @@ impl ProxyClient {
             let state_tx = inner.state_tx.clone();
             let shutdown_tx = inner.shutdown_tx.clone();
             let rejection = inner.rejection.clone();
+            let network = inner.network_tx.subscribe();
             inner.handle.spawn(async move {
                 match Supervisor::new(config, state_tx, shutdown_tx) {
                     Ok(supervisor) => {
-                        let supervisor = supervisor.with_rejection_slot(rejection);
+                        let supervisor = supervisor
+                            .with_rejection_slot(rejection)
+                            .with_network(network);
                         let _ = created_tx.send(Ok(()));
                         supervisor.run().await;
                     }
@@ -235,6 +243,35 @@ impl ProxyClient {
     /// reconnect yields a new one. It is what keeps two concurrent connections
     /// from one machine distinguishable; the persistent identity, if the host
     /// keeps one, is [`ClientConfig::device_id`], and is reported separately.
+    /// Tell the gateway which transport the host is on: `"cellular"`,
+    /// `"wifi"`, `"ethernet"` or `"other"`; `None` when unknown.
+    ///
+    /// Call it before `start()` and again whenever the platform reports a
+    /// change (on Android, a `ConnectivityManager` callback). The gateway
+    /// combines it with the network it measures the exit on to classify it as
+    /// mobile, residential or datacenter, which is what proxy customers select
+    /// by. It can only refine that measurement: an exit on a hosting network is
+    /// a datacenter exit whatever it reports.
+    ///
+    /// A live connection passes the change on at once when its gateway
+    /// supports that, and otherwise on the next connection. Values are
+    /// trimmed and lowercased; an empty one means `None`.
+    pub fn set_network(&self, network: Option<String>) {
+        let network = network
+            .map(|n| n.trim().to_ascii_lowercase())
+            .filter(|n| !n.is_empty());
+        self.inner.network_tx.send_if_modified(|current| {
+            let changed = *current != network;
+            *current = network;
+            changed
+        });
+    }
+
+    /// The transport last passed to [`Self::set_network`].
+    pub fn network(&self) -> Option<String> {
+        self.inner.network_tx.borrow().clone()
+    }
+
     pub fn client_key(&self) -> Option<String> {
         match &*self.inner.state_rx.borrow() {
             State::Connected { client_key, .. } => Some(client_key.clone()),

@@ -78,6 +78,14 @@ pub struct ClientHello {
     /// [`ClientHello::client_version`], which is the SDK's own version.
     #[serde(default)]
     pub app: Option<String>,
+    /// The transport the host is on right now: "cellular", "wifi", "ethernet"
+    /// or "other". Host-supplied (only the host can ask its OS), `None` when it
+    /// does not know. The gateway combines it with the measured egress network
+    /// to classify the exit as mobile, residential or datacenter. Self-reported,
+    /// so it can only ever refine a measurement, never override one: a hosting
+    /// network is `datacenter` whatever this says.
+    #[serde(default)]
+    pub network: Option<String>,
 }
 
 /// The gateway's reply to [`ClientHello`].
@@ -91,6 +99,13 @@ pub struct ServerHello {
     pub client_key: String,
     /// How often the gateway will send [`ControlToClient::Ping`].
     pub heartbeat_secs: u64,
+    /// Whether this gateway understands [`ControlToGateway::Network`]. A client
+    /// must not send that message otherwise: a gateway older than it stops
+    /// reading the control stream at the first frame it cannot parse, which
+    /// starves its heartbeat accounting and drops the exit. Absent (false) from
+    /// every gateway that predates it.
+    #[serde(default)]
+    pub network_updates: bool,
 }
 
 /// Gateway to client, on the control stream.
@@ -101,6 +116,10 @@ pub enum ControlToClient {
     /// The gateway is going away; the client should reconnect without waiting for
     /// a transport-level failure.
     Shutdown { reason: String },
+    /// A message from a newer gateway. Ignored, so a gateway can add messages
+    /// without dropping every client that predates them.
+    #[serde(other)]
+    Unknown,
 }
 
 /// Client to gateway, on the control stream.
@@ -108,6 +127,13 @@ pub enum ControlToClient {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ControlToGateway {
     Pong { nonce: u64 },
+    /// The host's transport changed (see [`ClientHello::network`]). Only sent
+    /// when [`ServerHello::network_updates`] was true.
+    Network { network: String },
+    /// A message from a newer client. Ignored, for the same reason as
+    /// [`ControlToClient::Unknown`].
+    #[serde(other)]
+    Unknown,
 }
 
 /// First frame on a data stream: the gateway asking the client to dial a target.
@@ -218,6 +244,7 @@ mod tests {
             device_name: Some("prod-fra-01".to_owned()),
             sdk: Some("rust".to_owned()),
             app: Some("meerkly-agent/1.0.0".to_owned()),
+            network: Some("cellular".to_owned()),
         };
         let back: ClientHello = serde_json::from_str(&serde_json::to_string(&hello).unwrap()).unwrap();
         assert_eq!(back.device_id.as_deref(), Some("dev_1234"));
@@ -226,6 +253,34 @@ mod tests {
         assert_eq!(back.device_name.as_deref(), Some("prod-fra-01"));
         assert_eq!(back.sdk.as_deref(), Some("rust"));
         assert_eq!(back.app.as_deref(), Some("meerkly-agent/1.0.0"));
+        assert_eq!(back.network.as_deref(), Some("cellular"));
+    }
+
+    /// An unknown control message must parse to `Unknown` rather than fail:
+    /// either reader stops at the first frame it cannot parse.
+    #[test]
+    fn unknown_control_messages_are_tolerated() {
+        let g: ControlToGateway =
+            serde_json::from_str(r#"{"type":"invented_later","x":1}"#).unwrap();
+        assert!(matches!(g, ControlToGateway::Unknown));
+        let c: ControlToClient = serde_json::from_str(r#"{"type":"invented_later"}"#).unwrap();
+        assert!(matches!(c, ControlToClient::Unknown));
+
+        let n = serde_json::to_string(&ControlToGateway::Network {
+            network: "wifi".to_owned(),
+        })
+        .unwrap();
+        assert_eq!(n, r#"{"type":"network","network":"wifi"}"#);
+    }
+
+    /// A gateway that predates `network_updates` must read as not accepting them.
+    #[test]
+    fn server_hello_without_network_updates_means_false() {
+        let h: ServerHello = serde_json::from_str(
+            r#"{"accepted":true,"gateway_id":"g","client_key":"k","heartbeat_secs":10}"#,
+        )
+        .unwrap();
+        assert!(!h.network_updates);
     }
 
     #[test]

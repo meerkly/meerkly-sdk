@@ -20,6 +20,11 @@ use tracing::{debug, info, warn};
 /// reports it. Cleared once a gateway accepts the client again.
 pub type RejectionSlot = Arc<Mutex<Option<String>>>;
 
+/// The host's current transport ("cellular", "wifi", …), as last set through
+/// [`crate::ProxyClient::set_network`]. A watch rather than a field because it
+/// changes under a live connection, and the connection has to hear about it.
+pub type NetworkWatch = watch::Receiver<Option<String>>;
+
 /// What the client is currently doing. Surfaced to host apps so they can show
 /// connection state without polling the gateway.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -41,6 +46,7 @@ pub struct Supervisor {
     state_tx: watch::Sender<State>,
     shutdown_tx: watch::Sender<bool>,
     rejection: RejectionSlot,
+    network: NetworkWatch,
 }
 
 impl Supervisor {
@@ -70,6 +76,9 @@ impl Supervisor {
             state_tx,
             shutdown_tx,
             rejection: RejectionSlot::default(),
+            // A receiver on a channel nobody sends on: the network is simply
+            // never known unless the host wires one in with `with_network`.
+            network: watch::channel(None).1,
         })
     }
 
@@ -78,6 +87,11 @@ impl Supervisor {
     /// signature for anyone constructing a supervisor directly.
     pub fn with_rejection_slot(mut self, slot: RejectionSlot) -> Self {
         self.rejection = slot;
+        self
+    }
+
+    pub fn with_network(mut self, network: NetworkWatch) -> Self {
+        self.network = network;
         self
     }
 
@@ -160,7 +174,11 @@ impl Supervisor {
             .await
             .context("cannot open the control stream")?;
 
-        write_frame(&mut send, &client_hello(&self.config))
+        // Marked seen as it is read: the hello carries this value, so only a
+        // change *after* it is news to the gateway.
+        let mut network = self.network.clone();
+        let current_network = network.borrow_and_update().clone();
+        write_frame(&mut send, &client_hello(&self.config, current_network))
             .await
             .context("sending client_hello")?;
 
@@ -208,8 +226,12 @@ impl Supervisor {
         // separate task keeps the control stream responsive under load.
         let accept_task = tokio::spawn(accept_streams(connection.clone(), self.config.connect_timeout));
 
+        // Without `network_updates` the gateway predates the message and would
+        // stop reading the control stream at it, so changes are kept to the
+        // next connection's hello instead.
+        let network = hello.network_updates.then_some(network);
         let result = self
-            .serve_control(&connection, &mut send, recv, shutdown_rx)
+            .serve_control(&connection, &mut send, recv, shutdown_rx, network)
             .await;
         accept_task.abort();
         result
@@ -222,6 +244,7 @@ impl Supervisor {
         send: &mut quinn::SendStream,
         mut recv: quinn::RecvStream,
         shutdown_rx: &mut watch::Receiver<bool>,
+        mut network: Option<NetworkWatch>,
     ) -> Result<()> {
         // Frames are read in a dedicated task and handed over a channel:
         // `read_frame` is not cancellation-safe, so it must never be a `select!`
@@ -247,12 +270,37 @@ impl Supervisor {
                         info!(%reason, "gateway asked us to reconnect");
                         break Ok(());
                     }
+                    // Something a newer gateway says that this client does not
+                    // know. Ignoring it is the whole point of the variant.
+                    Some(ControlToClient::Unknown) => {}
                     // The reader task ended, which means the control stream is
                     // gone even if the connection has not noticed yet.
                     None => break Ok(()),
                 },
 
                 _ = connection.closed() => break Ok(()),
+
+                // Only armed when the gateway accepts updates; `pending` keeps
+                // the branch inert otherwise. An empty string means "no longer
+                // known", which the message has no other way to say.
+                changed = async {
+                    match network.as_mut() {
+                        Some(rx) => rx.changed().await.map(|_| rx.borrow_and_update().clone()),
+                        None => std::future::pending().await,
+                    }
+                } => match changed {
+                    Ok(value) => {
+                        let message = ControlToGateway::Network {
+                            network: value.unwrap_or_default(),
+                        };
+                        if let Err(e) = write_frame(send, &message).await {
+                            break Err(anyhow::Error::new(e).context("reporting a network change"));
+                        }
+                    }
+                    // Every sender is gone (the client was dropped); stop
+                    // listening rather than spin on the closed channel.
+                    Err(_) => network = None,
+                },
 
                 _ = shutdown_rx.changed() => {
                     connection.close(0u32.into(), b"client stopping");
@@ -403,7 +451,7 @@ fn host_of(address: &str) -> String {
 /// know. It deliberately does not invent a `device_id`: a library that minted
 /// one would give every process on a machine a different identity, and would
 /// have nowhere durable to keep it.
-fn client_hello(config: &ClientConfig) -> ClientHello {
+fn client_hello(config: &ClientConfig, network: Option<String>) -> ClientHello {
     ClientHello {
         publisher_id: config.publisher_id.clone(),
         client_version: env!("CARGO_PKG_VERSION").to_owned(),
@@ -419,6 +467,7 @@ fn client_hello(config: &ClientConfig) -> ClientHello {
                 .unwrap_or_else(|| crate::config::DEFAULT_SDK.to_owned()),
         ),
         app: config.app.clone(),
+        network,
     }
 }
 
@@ -431,7 +480,7 @@ mod tests {
     /// pass them, so no binding can report them wrongly or forget them.
     #[test]
     fn the_sdk_reports_its_own_os_and_arch() {
-        let hello = client_hello(&ClientConfig::new("pub_abc"));
+        let hello = client_hello(&ClientConfig::new("pub_abc"), None);
         assert_eq!(hello.device_os.as_deref(), Some(std::env::consts::OS));
         assert_eq!(hello.device_arch.as_deref(), Some(std::env::consts::ARCH));
     }
@@ -441,7 +490,7 @@ mod tests {
     /// "this client has no identity".
     #[test]
     fn a_host_that_sets_nothing_reports_no_identity() {
-        let hello = client_hello(&ClientConfig::new("pub_abc"));
+        let hello = client_hello(&ClientConfig::new("pub_abc"), None);
         assert!(hello.device_id.is_none());
         assert!(hello.device_name.is_none());
         assert!(hello.app.is_none());
@@ -452,12 +501,12 @@ mod tests {
     /// languages set it themselves because one crate serves all five.
     #[test]
     fn sdk_defaults_to_rust_and_is_overridable() {
-        let hello = client_hello(&ClientConfig::new("pub_abc"));
+        let hello = client_hello(&ClientConfig::new("pub_abc"), None);
         assert_eq!(hello.sdk.as_deref(), Some("rust"));
 
         let mut config = ClientConfig::new("pub_abc");
         config.sdk = Some("python".to_owned());
-        assert_eq!(client_hello(&config).sdk.as_deref(), Some("python"));
+        assert_eq!(client_hello(&config, None).sdk.as_deref(), Some("python"));
     }
 
     #[test]
@@ -467,7 +516,7 @@ mod tests {
         config.device_name = Some("prod-fra-01".to_owned());
         config.app = Some("meerkly-agent/1.0.0".to_owned());
 
-        let hello = client_hello(&config);
+        let hello = client_hello(&config, None);
         assert_eq!(hello.device_id.as_deref(), Some("dev_1234"));
         assert_eq!(hello.device_name.as_deref(), Some("prod-fra-01"));
         assert_eq!(hello.app.as_deref(), Some("meerkly-agent/1.0.0"));

@@ -58,6 +58,7 @@ fn refusing_gateway() -> (String, Vec<u8>) {
                         gateway_id: "test-gateway".to_owned(),
                         client_key: String::new(),
                         heartbeat_secs: 15,
+                        network_updates: false,
                     },
                 )
                 .await
