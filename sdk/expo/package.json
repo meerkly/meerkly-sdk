@@ -1,6 +1,6 @@
 {
   "name": "@meerkly/expo",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Meerkly proxy network SDK for Expo and React Native — turn an Android app into a bandwidth-sharing exit node.",
   "keywords": [
     "meerkly",
