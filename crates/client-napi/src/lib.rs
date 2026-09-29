@@ -42,6 +42,9 @@ pub struct ProxyClientOptions {
     /// The host application, e.g. "my-app/2.1.0". Distinct from the SDK version,
     /// which the SDK reports itself.
     pub app: Option<String>,
+    /// The transport the host is on at start: "cellular", "wifi", "ethernet"
+    /// or "other". Report later changes with `setNetwork`.
+    pub network: Option<String>,
 }
 
 struct Inner {
@@ -93,6 +96,7 @@ impl ProxyClient {
         };
 
         let core = CoreClient::new(config, runtime.handle().clone()).map_err(to_napi_error)?;
+        core.set_network(options.network);
         Ok(Self {
             inner: Arc::new(Inner {
                 core,
@@ -137,6 +141,21 @@ impl ProxyClient {
     #[napi(getter)]
     pub fn last_rejection(&self) -> Option<String> {
         self.inner.core.last_rejection()
+    }
+
+    /// Tell the gateway which transport the host is on now: "cellular",
+    /// "wifi", "ethernet" or "other"; `null` when unknown. The gateway uses
+    /// it, with the network it measures, to classify the exit as mobile,
+    /// residential or datacenter.
+    #[napi]
+    pub fn set_network(&self, network: Option<String>) {
+        self.inner.core.set_network(network);
+    }
+
+    /// The transport last reported, or `null`.
+    #[napi(getter)]
+    pub fn network(&self) -> Option<String> {
+        self.inner.core.network()
     }
 
     /// One of `idle`, `connecting`, `connected`, `stopped`.

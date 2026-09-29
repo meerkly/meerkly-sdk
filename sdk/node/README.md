@@ -63,6 +63,7 @@ app.on("before-quit", (e) => { e.preventDefault(); client.stop().finally(() => a
 | `gatewayAddresses` | `string[]` | production gateway | Override the `host:port` list (dev/testing). |
 | `startTimeoutMs` | `number` | `30000` | How long `start()` waits for the first connection. |
 | `connectTimeoutMs` | `number` | `15000` | Per-target dial timeout on the exit. |
+| `network` | `string` | — | The transport at start: `cellular`, `wifi`, `ethernet` or `other`. See `setNetwork`. |
 | `caCertPath` / `caCertPem` | `string` / `Uint8Array` | — | Pin a self-signed gateway CA (dev only). Omit in production — the gateway's public certificate is verified against the system roots. |
 
 ### Methods & properties
@@ -77,6 +78,11 @@ app.on("before-quit", (e) => { e.preventDefault(); client.stop().finally(() => a
   (e.g. `another device is already connected from this IP address`), or `null`
   if it has not since the last successful connection. Written to be shown to a
   person.
+- `setNetwork(network: string | null): void` — report the transport the host is
+  on now (`cellular`, `wifi`, `ethernet`, `other`, or `null` when unknown).
+  Meerkly combines it with the network it measures to classify the exit as
+  mobile, residential or datacenter; a running client passes it on at once.
+- `network: string | null` — the transport last reported.
 
 ## How it works
 

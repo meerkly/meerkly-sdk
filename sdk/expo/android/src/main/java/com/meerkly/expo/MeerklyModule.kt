@@ -23,6 +23,7 @@ class MeerklyConfig : Record {
     @Field val app: String? = null
     @Field val deviceId: String? = null
     @Field val deviceName: String? = null
+    @Field val network: String? = null
     @Field val gatewayAddresses: List<String>? = null
     @Field val startTimeoutMs: Int? = null
     @Field val connectTimeoutMs: Int? = null
@@ -90,6 +91,7 @@ class MeerklyModule : Module() {
         Function("getState") { MeerklyClient.snapshot().state }
         Function("isConnected") { MeerklyClient.snapshot().connected }
         Function("getClientKey") { MeerklyClient.snapshot().clientKey }
+        Function("setNetwork") { network: String? -> MeerklyClient.setNetwork(network) }
 
         // Poll and emit only while JavaScript is actually listening.
         OnStartObserving {

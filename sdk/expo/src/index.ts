@@ -2,6 +2,7 @@ import MeerklyModule from './MeerklyModule'
 import type {
   ClientState,
   MeerklyConfig,
+  NetworkType,
   StateChangeEvent,
   Subscription,
 } from './Meerkly.types'
@@ -74,6 +75,16 @@ export function isConnected(): boolean {
 
 export function getClientKey(): string | null {
   return MeerklyModule?.getClientKey() ?? null
+}
+
+/**
+ * Tell Meerkly which transport the device is on now ('cellular', 'wifi',
+ * 'ethernet', 'other'), or null when unknown. Call it from your network-change
+ * listener; it is remembered across `start()` calls and reaches a running
+ * client at once. A no-op on platforms with no native module.
+ */
+export function setNetwork(network: NetworkType | null): void {
+  MeerklyModule?.setNetwork(network ?? null)
 }
 
 /**

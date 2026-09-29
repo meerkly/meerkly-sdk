@@ -19,6 +19,9 @@ export type ForegroundServiceOptions = {
   channelName?: string
 }
 
+/** The transport a device reports; free-form strings are accepted too. */
+export type NetworkType = 'cellular' | 'wifi' | 'ethernet' | 'other' | (string & {})
+
 export type MeerklyConfig = {
   /** Your publisher id from the Meerkly dashboard. Public, not a secret. */
   publisherId: string
@@ -31,6 +34,13 @@ export type MeerklyConfig = {
   deviceId?: string
   /** A human name for the device, defaulting to the Android model. */
   deviceName?: string
+  /**
+   * The transport the device is on at start: 'cellular', 'wifi', 'ethernet'
+   * or 'other'. Report changes with `setNetwork`. Meerkly uses it, with the
+   * network it measures, to classify the exit as mobile, residential or
+   * datacenter.
+   */
+  network?: NetworkType
   /** Development override. Empty or omitted means the production gateway. */
   gatewayAddresses?: string[]
   startTimeoutMs?: number

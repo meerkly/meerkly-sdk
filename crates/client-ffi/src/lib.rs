@@ -44,6 +44,10 @@ pub struct ProxyConfig {
     /// The host application, e.g. "my-app/2.1.0".
     #[uniffi(default = None)]
     pub app: Option<String>,
+    /// The transport the host is on at start: "cellular", "wifi", "ethernet"
+    /// or "other". Report later changes with `set_network`.
+    #[uniffi(default = None)]
+    pub network: Option<String>,
 }
 
 /// What the client is currently doing.
@@ -124,6 +128,7 @@ impl ProxyClient {
         };
 
         let core = CoreClient::new(core_config, runtime.handle().clone())?;
+        core.set_network(config.network);
         Ok(Arc::new(Self { core, runtime }))
     }
 
@@ -169,6 +174,20 @@ impl ProxyClient {
     /// client keeps retrying.
     pub fn last_rejection(&self) -> Option<String> {
         self.core.last_rejection()
+    }
+
+    /// Tell the gateway which transport the host is on now: "cellular",
+    /// "wifi", "ethernet" or "other"; null when unknown. Call it whenever the
+    /// platform reports a change (on Android, a `ConnectivityManager`
+    /// callback). The gateway uses it, with the network it measures, to
+    /// classify the exit as mobile, residential or datacenter.
+    pub fn set_network(&self, network: Option<String>) {
+        self.core.set_network(network);
+    }
+
+    /// The transport last reported, or null.
+    pub fn network(&self) -> Option<String> {
+        self.core.network()
     }
 
     pub fn state(&self) -> ClientState {

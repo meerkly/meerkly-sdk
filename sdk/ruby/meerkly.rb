@@ -144,6 +144,7 @@ module Meerkly
       RustBuffer.check_lower_Optionalstring(v.device_name)
       RustBuffer.check_lower_Optionalstring(v.sdk)
       RustBuffer.check_lower_Optionalstring(v.app)
+      RustBuffer.check_lower_Optionalstring(v.network)
     end
 
     def self.alloc_from_TypeProxyConfig(v)
@@ -345,7 +346,8 @@ module Meerkly
         device_id: readOptionalstring,
         device_name: readOptionalstring,
         sdk: readOptionalstring,
-        app: readOptionalstring
+        app: readOptionalstring,
+        network: readOptionalstring
       )
     end
 
@@ -519,6 +521,7 @@ module Meerkly
       write_Optionalstring(v.device_name)
       write_Optionalstring(v.sdk)
       write_Optionalstring(v.app)
+      write_Optionalstring(v.network)
     end
 
     # The Enum type ClientState.
@@ -714,6 +717,15 @@ module Meerkly
     attach_function :uniffi_meerkly_fn_method_proxyclient_gateway_id,
                     [:pointer, RustCallStatus.by_ref],
                     RustBuffer.by_value
+    attach_function :uniffi_meerkly_fn_method_proxyclient_last_rejection,
+                    [:pointer, RustCallStatus.by_ref],
+                    RustBuffer.by_value
+    attach_function :uniffi_meerkly_fn_method_proxyclient_network,
+                    [:pointer, RustCallStatus.by_ref],
+                    RustBuffer.by_value
+    attach_function :uniffi_meerkly_fn_method_proxyclient_set_network,
+                    [:pointer, RustBuffer.by_value, RustCallStatus.by_ref],
+                    :void
     attach_function :uniffi_meerkly_fn_method_proxyclient_start,
                     [:pointer, RustCallStatus.by_ref],
                     :uint64
@@ -748,6 +760,15 @@ module Meerkly
                     [RustCallStatus.by_ref],
                     :uint16
     attach_function :uniffi_meerkly_checksum_method_proxyclient_gateway_id,
+                    [RustCallStatus.by_ref],
+                    :uint16
+    attach_function :uniffi_meerkly_checksum_method_proxyclient_last_rejection,
+                    [RustCallStatus.by_ref],
+                    :uint16
+    attach_function :uniffi_meerkly_checksum_method_proxyclient_network,
+                    [RustCallStatus.by_ref],
+                    :uint16
+    attach_function :uniffi_meerkly_checksum_method_proxyclient_set_network,
                     [RustCallStatus.by_ref],
                     :uint16
     attach_function :uniffi_meerkly_checksum_method_proxyclient_start,
@@ -785,10 +806,10 @@ module Meerkly
   # Record type ProxyConfig
   class ProxyConfig
     attr_reader :publisher_id, :gateway_addresses, :ca_cert_path, :ca_cert_pem, :start_timeout_ms, :connect_timeout_ms,
-                :device_id, :device_name, :sdk, :app
+                :device_id, :device_name, :sdk, :app, :network
 
     def initialize(publisher_id:, gateway_addresses:, ca_cert_path: nil, ca_cert_pem: nil, start_timeout_ms: nil,
-                   connect_timeout_ms: nil, device_id: nil, device_name: nil, sdk: nil, app: nil)
+                   connect_timeout_ms: nil, device_id: nil, device_name: nil, sdk: nil, app: nil, network: nil)
       @publisher_id = publisher_id
       @gateway_addresses = gateway_addresses
       @ca_cert_path = ca_cert_path
@@ -799,6 +820,7 @@ module Meerkly
       @device_name = device_name
       @sdk = sdk
       @app = app
+      @network = network
     end
 
     def ==(other)
@@ -812,6 +834,7 @@ module Meerkly
       return false if @device_name != other.device_name
       return false if @sdk != other.sdk
       return false if @app != other.app
+      return false if @network != other.network
 
       true
     end
@@ -882,6 +905,23 @@ module Meerkly
     def gateway_id
       result = Meerkly.rust_call(:uniffi_meerkly_fn_method_proxyclient_gateway_id, uniffi_clone_pointer)
       result.consumeIntoOptionalstring
+    end
+
+    def last_rejection
+      result = Meerkly.rust_call(:uniffi_meerkly_fn_method_proxyclient_last_rejection, uniffi_clone_pointer)
+      result.consumeIntoOptionalstring
+    end
+
+    def network
+      result = Meerkly.rust_call(:uniffi_meerkly_fn_method_proxyclient_network, uniffi_clone_pointer)
+      result.consumeIntoOptionalstring
+    end
+
+    def set_network(network)
+      network = (network ? Meerkly.uniffi_utf8(network) : nil)
+      RustBuffer.check_lower_Optionalstring(network)
+      Meerkly.rust_call(:uniffi_meerkly_fn_method_proxyclient_set_network, uniffi_clone_pointer,
+                        RustBuffer.alloc_from_Optionalstring(network))
     end
 
     def start

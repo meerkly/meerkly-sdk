@@ -467,6 +467,12 @@ def _uniffi_check_api_checksums(lib):
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_meerkly_checksum_method_proxyclient_gateway_id() != 12787:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_meerkly_checksum_method_proxyclient_last_rejection() != 11660:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_meerkly_checksum_method_proxyclient_network() != 13252:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    if lib.uniffi_meerkly_checksum_method_proxyclient_set_network() != 38512:
+        raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_meerkly_checksum_method_proxyclient_start() != 7497:
         raise InternalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     if lib.uniffi_meerkly_checksum_method_proxyclient_start_blocking() != 15227:
@@ -615,6 +621,22 @@ _UniffiLib.uniffi_meerkly_fn_method_proxyclient_gateway_id.argtypes = (
     ctypes.POINTER(_UniffiRustCallStatus),
 )
 _UniffiLib.uniffi_meerkly_fn_method_proxyclient_gateway_id.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_meerkly_fn_method_proxyclient_last_rejection.argtypes = (
+    ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_meerkly_fn_method_proxyclient_last_rejection.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_meerkly_fn_method_proxyclient_network.argtypes = (
+    ctypes.c_void_p,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_meerkly_fn_method_proxyclient_network.restype = _UniffiRustBuffer
+_UniffiLib.uniffi_meerkly_fn_method_proxyclient_set_network.argtypes = (
+    ctypes.c_void_p,
+    _UniffiRustBuffer,
+    ctypes.POINTER(_UniffiRustCallStatus),
+)
+_UniffiLib.uniffi_meerkly_fn_method_proxyclient_set_network.restype = None
 _UniffiLib.uniffi_meerkly_fn_method_proxyclient_start.argtypes = (
     ctypes.c_void_p,
 )
@@ -915,6 +937,15 @@ _UniffiLib.uniffi_meerkly_checksum_method_proxyclient_connected.restype = ctypes
 _UniffiLib.uniffi_meerkly_checksum_method_proxyclient_gateway_id.argtypes = (
 )
 _UniffiLib.uniffi_meerkly_checksum_method_proxyclient_gateway_id.restype = ctypes.c_uint16
+_UniffiLib.uniffi_meerkly_checksum_method_proxyclient_last_rejection.argtypes = (
+)
+_UniffiLib.uniffi_meerkly_checksum_method_proxyclient_last_rejection.restype = ctypes.c_uint16
+_UniffiLib.uniffi_meerkly_checksum_method_proxyclient_network.argtypes = (
+)
+_UniffiLib.uniffi_meerkly_checksum_method_proxyclient_network.restype = ctypes.c_uint16
+_UniffiLib.uniffi_meerkly_checksum_method_proxyclient_set_network.argtypes = (
+)
+_UniffiLib.uniffi_meerkly_checksum_method_proxyclient_set_network.restype = ctypes.c_uint16
 _UniffiLib.uniffi_meerkly_checksum_method_proxyclient_start.argtypes = (
 )
 _UniffiLib.uniffi_meerkly_checksum_method_proxyclient_start.restype = ctypes.c_uint16
@@ -1048,6 +1079,31 @@ class ProxyClientProtocol(typing.Protocol):
         raise NotImplementedError
     def gateway_id(self, ):
         raise NotImplementedError
+    def last_rejection(self, ):
+        """
+        Why the gateway last refused this client (e.g. "another device is
+        already connected from this IP address"), or null if it has not since
+        the last successful connection. Meant to be shown to the user while the
+        client keeps retrying.
+        """
+
+        raise NotImplementedError
+    def network(self, ):
+        """
+        The transport last reported, or null.
+        """
+
+        raise NotImplementedError
+    def set_network(self, network: "typing.Optional[str]"):
+        """
+        Tell the gateway which transport the host is on now: "cellular",
+        "wifi", "ethernet" or "other"; null when unknown. Call it whenever the
+        platform reports a change (on Android, a `ConnectivityManager`
+        callback). The gateway uses it, with the network it measures, to
+        classify the exit as mobile, residential or datacenter.
+        """
+
+        raise NotImplementedError
     def start(self, ):
         """
         Connect and register. Resolves once online; errors on timeout.
@@ -1136,6 +1192,54 @@ class ProxyClient:
         return _UniffiConverterOptionalString.lift(
             _uniffi_rust_call(_UniffiLib.uniffi_meerkly_fn_method_proxyclient_gateway_id,self._uniffi_clone_pointer(),)
         )
+
+
+
+
+
+    def last_rejection(self, ) -> "typing.Optional[str]":
+        """
+        Why the gateway last refused this client (e.g. "another device is
+        already connected from this IP address"), or null if it has not since
+        the last successful connection. Meant to be shown to the user while the
+        client keeps retrying.
+        """
+
+        return _UniffiConverterOptionalString.lift(
+            _uniffi_rust_call(_UniffiLib.uniffi_meerkly_fn_method_proxyclient_last_rejection,self._uniffi_clone_pointer(),)
+        )
+
+
+
+
+
+    def network(self, ) -> "typing.Optional[str]":
+        """
+        The transport last reported, or null.
+        """
+
+        return _UniffiConverterOptionalString.lift(
+            _uniffi_rust_call(_UniffiLib.uniffi_meerkly_fn_method_proxyclient_network,self._uniffi_clone_pointer(),)
+        )
+
+
+
+
+
+    def set_network(self, network: "typing.Optional[str]") -> None:
+        """
+        Tell the gateway which transport the host is on now: "cellular",
+        "wifi", "ethernet" or "other"; null when unknown. Call it whenever the
+        platform reports a change (on Android, a `ConnectivityManager`
+        callback). The gateway uses it, with the network it measures, to
+        classify the exit as mobile, residential or datacenter.
+        """
+
+        _UniffiConverterOptionalString.check_lower(network)
+        
+        _uniffi_rust_call(_UniffiLib.uniffi_meerkly_fn_method_proxyclient_set_network,self._uniffi_clone_pointer(),
+        _UniffiConverterOptionalString.lower(network))
+
 
 
 
@@ -1289,7 +1393,13 @@ class ProxyConfig:
     The host application, e.g. "my-app/2.1.0".
     """
 
-    def __init__(self, *, publisher_id: "str", gateway_addresses: "typing.List[str]", ca_cert_path: "typing.Optional[str]" = _DEFAULT, ca_cert_pem: "typing.Optional[bytes]" = _DEFAULT, start_timeout_ms: "typing.Optional[int]" = _DEFAULT, connect_timeout_ms: "typing.Optional[int]" = _DEFAULT, device_id: "typing.Optional[str]" = _DEFAULT, device_name: "typing.Optional[str]" = _DEFAULT, sdk: "typing.Optional[str]" = _DEFAULT, app: "typing.Optional[str]" = _DEFAULT):
+    network: "typing.Optional[str]"
+    """
+    The transport the host is on at start: "cellular", "wifi", "ethernet"
+    or "other". Report later changes with `set_network`.
+    """
+
+    def __init__(self, *, publisher_id: "str", gateway_addresses: "typing.List[str]", ca_cert_path: "typing.Optional[str]" = _DEFAULT, ca_cert_pem: "typing.Optional[bytes]" = _DEFAULT, start_timeout_ms: "typing.Optional[int]" = _DEFAULT, connect_timeout_ms: "typing.Optional[int]" = _DEFAULT, device_id: "typing.Optional[str]" = _DEFAULT, device_name: "typing.Optional[str]" = _DEFAULT, sdk: "typing.Optional[str]" = _DEFAULT, app: "typing.Optional[str]" = _DEFAULT, network: "typing.Optional[str]" = _DEFAULT):
         self.publisher_id = publisher_id
         self.gateway_addresses = gateway_addresses
         if ca_cert_path is _DEFAULT:
@@ -1324,9 +1434,13 @@ class ProxyConfig:
             self.app = None
         else:
             self.app = app
+        if network is _DEFAULT:
+            self.network = None
+        else:
+            self.network = network
 
     def __str__(self):
-        return "ProxyConfig(publisher_id={}, gateway_addresses={}, ca_cert_path={}, ca_cert_pem={}, start_timeout_ms={}, connect_timeout_ms={}, device_id={}, device_name={}, sdk={}, app={})".format(self.publisher_id, self.gateway_addresses, self.ca_cert_path, self.ca_cert_pem, self.start_timeout_ms, self.connect_timeout_ms, self.device_id, self.device_name, self.sdk, self.app)
+        return "ProxyConfig(publisher_id={}, gateway_addresses={}, ca_cert_path={}, ca_cert_pem={}, start_timeout_ms={}, connect_timeout_ms={}, device_id={}, device_name={}, sdk={}, app={}, network={})".format(self.publisher_id, self.gateway_addresses, self.ca_cert_path, self.ca_cert_pem, self.start_timeout_ms, self.connect_timeout_ms, self.device_id, self.device_name, self.sdk, self.app, self.network)
 
     def __eq__(self, other):
         if self.publisher_id != other.publisher_id:
@@ -1349,6 +1463,8 @@ class ProxyConfig:
             return False
         if self.app != other.app:
             return False
+        if self.network != other.network:
+            return False
         return True
 
 class _UniffiConverterTypeProxyConfig(_UniffiConverterRustBuffer):
@@ -1365,6 +1481,7 @@ class _UniffiConverterTypeProxyConfig(_UniffiConverterRustBuffer):
             device_name=_UniffiConverterOptionalString.read(buf),
             sdk=_UniffiConverterOptionalString.read(buf),
             app=_UniffiConverterOptionalString.read(buf),
+            network=_UniffiConverterOptionalString.read(buf),
         )
 
     @staticmethod
@@ -1379,6 +1496,7 @@ class _UniffiConverterTypeProxyConfig(_UniffiConverterRustBuffer):
         _UniffiConverterOptionalString.check_lower(value.device_name)
         _UniffiConverterOptionalString.check_lower(value.sdk)
         _UniffiConverterOptionalString.check_lower(value.app)
+        _UniffiConverterOptionalString.check_lower(value.network)
 
     @staticmethod
     def write(value, buf):
@@ -1392,6 +1510,7 @@ class _UniffiConverterTypeProxyConfig(_UniffiConverterRustBuffer):
         _UniffiConverterOptionalString.write(value.device_name, buf)
         _UniffiConverterOptionalString.write(value.sdk, buf)
         _UniffiConverterOptionalString.write(value.app, buf)
+        _UniffiConverterOptionalString.write(value.network, buf)
 
 
 

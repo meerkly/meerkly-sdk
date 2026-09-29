@@ -39,6 +39,10 @@ object MeerklyClient {
     private var listener: ((Snapshot) -> Unit)? = null
     private var lastSnapshot: Snapshot? = null
 
+    // Kept here rather than only on the client: an app may report its network
+    // before start(), and a client is rebuilt on every start after a stop.
+    private var network: String? = null
+
     private val scope = CoroutineScope(Dispatchers.Default)
 
     // connect() and disconnect() are suspend, so they cannot use
@@ -50,6 +54,13 @@ object MeerklyClient {
     @Synchronized
     fun setListener(l: ((Snapshot) -> Unit)?) {
         listener = l
+    }
+
+    /** Record the device's transport and pass it to a running client. */
+    @Synchronized
+    fun setNetwork(value: String?) {
+        network = value
+        client?.setNetwork(value)
     }
 
     fun snapshot(): Snapshot {
@@ -103,8 +114,10 @@ object MeerklyClient {
                 deviceName = options.deviceName ?: Build.MODEL,
                 sdk = "expo",
                 app = options.app,
+                network = options.network ?: network,
             ),
         )
+        options.network?.let { network = it }
         client = created
         return created
     }

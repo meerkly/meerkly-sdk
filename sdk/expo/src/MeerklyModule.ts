@@ -16,6 +16,7 @@ export type MeerklyNativeModule = {
   getState(): ClientState
   isConnected(): boolean
   getClientKey(): string | null
+  setNetwork(network: string | null): void
 }
 
 export default requireOptionalNativeModule<MeerklyNativeModule>('Meerkly')

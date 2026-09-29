@@ -30,6 +30,10 @@ client.start()   // suspend: connects and registers, throws ProxyException on fa
 // … client.connected(), client.state(), client.clientKey() …
 // client.lastRejection(): why the gateway last refused this device, or null —
 // e.g. "another device is already connected from this IP address". Show it.
+// client.setNetwork("cellular"): report the transport ("cellular", "wifi",
+// "ethernet", "other", or null) from a ConnectivityManager callback. Meerkly
+// uses it to classify the exit as mobile, residential or datacenter. It can
+// also be passed at start as ProxyConfig(network = …).
 client.stop()
 client.destroy() // releases the native handle
 ```

@@ -100,6 +100,7 @@ so a device keeps its identity and its earnings history across restarts. Pass
 | `getState()` | `'idle' \| 'connecting' \| 'connected' \| 'stopped'` |
 | `isConnected()` | boolean |
 | `getClientKey()` | gateway-assigned key, null until connected |
+| `setNetwork(network)` | report the transport (`'cellular'`, `'wifi'`, `'ethernet'`, `'other'`, or null) from your network-change listener; also accepted as `network` in `start(config)` |
 | `addStateListener(fn)` | state changes; returns a subscription |
 | `isSupported` | false on iOS and web |
 

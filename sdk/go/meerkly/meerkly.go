@@ -376,6 +376,33 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_meerkly_checksum_method_proxyclient_last_rejection()
+		})
+		if checksum != 11660 {
+			// If this happens try cleaning and rebuilding your project
+			panic("meerkly: uniffi_meerkly_checksum_method_proxyclient_last_rejection: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_meerkly_checksum_method_proxyclient_network()
+		})
+		if checksum != 13252 {
+			// If this happens try cleaning and rebuilding your project
+			panic("meerkly: uniffi_meerkly_checksum_method_proxyclient_network: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_meerkly_checksum_method_proxyclient_set_network()
+		})
+		if checksum != 38512 {
+			// If this happens try cleaning and rebuilding your project
+			panic("meerkly: uniffi_meerkly_checksum_method_proxyclient_set_network: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_meerkly_checksum_method_proxyclient_start()
 		})
 		if checksum != 7497 {
@@ -650,6 +677,19 @@ type ProxyClientInterface interface {
 	ClientKey() *string
 	Connected() bool
 	GatewayId() *string
+	// Why the gateway last refused this client (e.g. "another device is
+	// already connected from this IP address"), or null if it has not since
+	// the last successful connection. Meant to be shown to the user while the
+	// client keeps retrying.
+	LastRejection() *string
+	// The transport last reported, or null.
+	Network() *string
+	// Tell the gateway which transport the host is on now: "cellular",
+	// "wifi", "ethernet" or "other"; null when unknown. Call it whenever the
+	// platform reports a change (on Android, a `ConnectivityManager`
+	// callback). The gateway uses it, with the network it measures, to
+	// classify the exit as mobile, residential or datacenter.
+	SetNetwork(network *string)
 	// Connect and register. Resolves once online; errors on timeout.
 	Start() error
 	// Blocking `start`, for bindings without async support (e.g. Ruby). Blocks
@@ -713,6 +753,48 @@ func (_self *ProxyClient) GatewayId() *string {
 	}))
 }
 
+// Why the gateway last refused this client (e.g. "another device is
+// already connected from this IP address"), or null if it has not since
+// the last successful connection. Meant to be shown to the user while the
+// client keeps retrying.
+func (_self *ProxyClient) LastRejection() *string {
+	_pointer := _self.ffiObject.incrementPointer("*ProxyClient")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterOptionalStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return GoRustBuffer{
+			inner: C.uniffi_meerkly_fn_method_proxyclient_last_rejection(
+				_pointer, _uniffiStatus),
+		}
+	}))
+}
+
+// The transport last reported, or null.
+func (_self *ProxyClient) Network() *string {
+	_pointer := _self.ffiObject.incrementPointer("*ProxyClient")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterOptionalStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return GoRustBuffer{
+			inner: C.uniffi_meerkly_fn_method_proxyclient_network(
+				_pointer, _uniffiStatus),
+		}
+	}))
+}
+
+// Tell the gateway which transport the host is on now: "cellular",
+// "wifi", "ethernet" or "other"; null when unknown. Call it whenever the
+// platform reports a change (on Android, a `ConnectivityManager`
+// callback). The gateway uses it, with the network it measures, to
+// classify the exit as mobile, residential or datacenter.
+func (_self *ProxyClient) SetNetwork(network *string) {
+	_pointer := _self.ffiObject.incrementPointer("*ProxyClient")
+	defer _self.ffiObject.decrementPointer()
+	rustCall(func(_uniffiStatus *C.RustCallStatus) bool {
+		C.uniffi_meerkly_fn_method_proxyclient_set_network(
+			_pointer, FfiConverterOptionalStringINSTANCE.Lower(network), _uniffiStatus)
+		return false
+	})
+}
+
 // Connect and register. Resolves once online; errors on timeout.
 func (_self *ProxyClient) Start() error {
 	_pointer := _self.ffiObject.incrementPointer("*ProxyClient")
@@ -738,10 +820,7 @@ func (_self *ProxyClient) Start() error {
 		},
 	)
 
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // Blocking `start`, for bindings without async support (e.g. Ruby). Blocks
@@ -793,10 +872,7 @@ func (_self *ProxyClient) Stop() error {
 		},
 	)
 
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // Blocking `stop`.
@@ -880,6 +956,9 @@ type ProxyConfig struct {
 	Sdk *string
 	// The host application, e.g. "my-app/2.1.0".
 	App *string
+	// The transport the host is on at start: "cellular", "wifi", "ethernet"
+	// or "other". Report later changes with `set_network`.
+	Network *string
 }
 
 func (r *ProxyConfig) Destroy() {
@@ -893,6 +972,7 @@ func (r *ProxyConfig) Destroy() {
 	FfiDestroyerOptionalString{}.Destroy(r.DeviceName)
 	FfiDestroyerOptionalString{}.Destroy(r.Sdk)
 	FfiDestroyerOptionalString{}.Destroy(r.App)
+	FfiDestroyerOptionalString{}.Destroy(r.Network)
 }
 
 type FfiConverterProxyConfig struct{}
@@ -915,6 +995,7 @@ func (c FfiConverterProxyConfig) Read(reader io.Reader) ProxyConfig {
 		FfiConverterOptionalStringINSTANCE.Read(reader),
 		FfiConverterOptionalStringINSTANCE.Read(reader),
 		FfiConverterOptionalStringINSTANCE.Read(reader),
+		FfiConverterOptionalStringINSTANCE.Read(reader),
 	}
 }
 
@@ -933,6 +1014,7 @@ func (c FfiConverterProxyConfig) Write(writer io.Writer, value ProxyConfig) {
 	FfiConverterOptionalStringINSTANCE.Write(writer, value.DeviceName)
 	FfiConverterOptionalStringINSTANCE.Write(writer, value.Sdk)
 	FfiConverterOptionalStringINSTANCE.Write(writer, value.App)
+	FfiConverterOptionalStringINSTANCE.Write(writer, value.Network)
 }
 
 type FfiDestroyerProxyConfig struct{}

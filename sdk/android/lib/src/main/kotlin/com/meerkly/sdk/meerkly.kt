@@ -741,6 +741,12 @@ internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
 
 
 
+
+
+
+
+
+
 // A JNA Library to expose the extern-C FFI definitions.
 // This is an implementation detail which will be called internally by the public API.
 
@@ -772,6 +778,12 @@ internal interface UniffiLib : Library {
     ): Byte
     fun uniffi_meerkly_fn_method_proxyclient_gateway_id(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    fun uniffi_meerkly_fn_method_proxyclient_last_rejection(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_meerkly_fn_method_proxyclient_network(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
+    fun uniffi_meerkly_fn_method_proxyclient_set_network(`ptr`: Pointer,`network`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
     fun uniffi_meerkly_fn_method_proxyclient_start(`ptr`: Pointer,
     ): Long
     fun uniffi_meerkly_fn_method_proxyclient_start_blocking(`ptr`: Pointer,uniffi_out_err: UniffiRustCallStatus, 
@@ -900,6 +912,12 @@ internal interface UniffiLib : Library {
     ): Short
     fun uniffi_meerkly_checksum_method_proxyclient_gateway_id(
     ): Short
+    fun uniffi_meerkly_checksum_method_proxyclient_last_rejection(
+    ): Short
+    fun uniffi_meerkly_checksum_method_proxyclient_network(
+    ): Short
+    fun uniffi_meerkly_checksum_method_proxyclient_set_network(
+    ): Short
     fun uniffi_meerkly_checksum_method_proxyclient_start(
     ): Short
     fun uniffi_meerkly_checksum_method_proxyclient_start_blocking(
@@ -936,6 +954,15 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_meerkly_checksum_method_proxyclient_gateway_id() != 12787.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_meerkly_checksum_method_proxyclient_last_rejection() != 11660.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_meerkly_checksum_method_proxyclient_network() != 13252.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_meerkly_checksum_method_proxyclient_set_network() != 38512.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_meerkly_checksum_method_proxyclient_start() != 7497.toShort()) {
@@ -1344,6 +1371,28 @@ public interface ProxyClientInterface {
     fun `gatewayId`(): kotlin.String?
     
     /**
+     * Why the gateway last refused this client (e.g. "another device is
+     * already connected from this IP address"), or null if it has not since
+     * the last successful connection. Meant to be shown to the user while the
+     * client keeps retrying.
+     */
+    fun `lastRejection`(): kotlin.String?
+    
+    /**
+     * The transport last reported, or null.
+     */
+    fun `network`(): kotlin.String?
+    
+    /**
+     * Tell the gateway which transport the host is on now: "cellular",
+     * "wifi", "ethernet" or "other"; null when unknown. Call it whenever the
+     * platform reports a change (on Android, a `ConnectivityManager`
+     * callback). The gateway uses it, with the network it measures, to
+     * classify the exit as mobile, residential or datacenter.
+     */
+    fun `setNetwork`(`network`: kotlin.String?)
+    
+    /**
      * Connect and register. Resolves once online; errors on timeout.
      */
     suspend fun `start`()
@@ -1499,6 +1548,57 @@ open class ProxyClient: Disposable, AutoCloseable, ProxyClientInterface {
     }
     )
     }
+    
+
+    
+    /**
+     * Why the gateway last refused this client (e.g. "another device is
+     * already connected from this IP address"), or null if it has not since
+     * the last successful connection. Meant to be shown to the user while the
+     * client keeps retrying.
+     */override fun `lastRejection`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_meerkly_fn_method_proxyclient_last_rejection(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The transport last reported, or null.
+     */override fun `network`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_meerkly_fn_method_proxyclient_network(
+        it, _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Tell the gateway which transport the host is on now: "cellular",
+     * "wifi", "ethernet" or "other"; null when unknown. Call it whenever the
+     * platform reports a change (on Android, a `ConnectivityManager`
+     * callback). The gateway uses it, with the network it measures, to
+     * classify the exit as mobile, residential or datacenter.
+     */override fun `setNetwork`(`network`: kotlin.String?)
+        = 
+    callWithPointer {
+    uniffiRustCall() { _status ->
+    UniffiLib.INSTANCE.uniffi_meerkly_fn_method_proxyclient_set_network(
+        it, FfiConverterOptionalString.lower(`network`),_status)
+}
+    }
+    
     
 
     
@@ -1662,7 +1762,12 @@ data class ProxyConfig (
     /**
      * The host application, e.g. "my-app/2.1.0".
      */
-    var `app`: kotlin.String? = null
+    var `app`: kotlin.String? = null, 
+    /**
+     * The transport the host is on at start: "cellular", "wifi", "ethernet"
+     * or "other". Report later changes with `set_network`.
+     */
+    var `network`: kotlin.String? = null
 ) {
     
     companion object
@@ -1684,6 +1789,7 @@ public object FfiConverterTypeProxyConfig: FfiConverterRustBuffer<ProxyConfig> {
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
         )
     }
 
@@ -1697,7 +1803,8 @@ public object FfiConverterTypeProxyConfig: FfiConverterRustBuffer<ProxyConfig> {
             FfiConverterOptionalString.allocationSize(value.`deviceId`) +
             FfiConverterOptionalString.allocationSize(value.`deviceName`) +
             FfiConverterOptionalString.allocationSize(value.`sdk`) +
-            FfiConverterOptionalString.allocationSize(value.`app`)
+            FfiConverterOptionalString.allocationSize(value.`app`) +
+            FfiConverterOptionalString.allocationSize(value.`network`)
     )
 
     override fun write(value: ProxyConfig, buf: ByteBuffer) {
@@ -1711,6 +1818,7 @@ public object FfiConverterTypeProxyConfig: FfiConverterRustBuffer<ProxyConfig> {
             FfiConverterOptionalString.write(value.`deviceName`, buf)
             FfiConverterOptionalString.write(value.`sdk`, buf)
             FfiConverterOptionalString.write(value.`app`, buf)
+            FfiConverterOptionalString.write(value.`network`, buf)
     }
 }
 

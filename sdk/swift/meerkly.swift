@@ -515,6 +515,28 @@ public protocol ProxyClientProtocol : AnyObject {
     func gatewayId()  -> String?
     
     /**
+     * Why the gateway last refused this client (e.g. "another device is
+     * already connected from this IP address"), or null if it has not since
+     * the last successful connection. Meant to be shown to the user while the
+     * client keeps retrying.
+     */
+    func lastRejection()  -> String?
+    
+    /**
+     * The transport last reported, or null.
+     */
+    func network()  -> String?
+    
+    /**
+     * Tell the gateway which transport the host is on now: "cellular",
+     * "wifi", "ethernet" or "other"; null when unknown. Call it whenever the
+     * platform reports a change (on Android, a `ConnectivityManager`
+     * callback). The gateway uses it, with the network it measures, to
+     * classify the exit as mobile, residential or datacenter.
+     */
+    func setNetwork(network: String?) 
+    
+    /**
      * Connect and register. Resolves once online; errors on timeout.
      */
     func start() async throws 
@@ -624,6 +646,43 @@ open func gatewayId() -> String? {
     uniffi_meerkly_fn_method_proxyclient_gateway_id(self.uniffiClonePointer(),$0
     )
 })
+}
+    
+    /**
+     * Why the gateway last refused this client (e.g. "another device is
+     * already connected from this IP address"), or null if it has not since
+     * the last successful connection. Meant to be shown to the user while the
+     * client keeps retrying.
+     */
+open func lastRejection() -> String? {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_meerkly_fn_method_proxyclient_last_rejection(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * The transport last reported, or null.
+     */
+open func network() -> String? {
+    return try!  FfiConverterOptionString.lift(try! rustCall() {
+    uniffi_meerkly_fn_method_proxyclient_network(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
+     * Tell the gateway which transport the host is on now: "cellular",
+     * "wifi", "ethernet" or "other"; null when unknown. Call it whenever the
+     * platform reports a change (on Android, a `ConnectivityManager`
+     * callback). The gateway uses it, with the network it measures, to
+     * classify the exit as mobile, residential or datacenter.
+     */
+open func setNetwork(network: String?) {try! rustCall() {
+    uniffi_meerkly_fn_method_proxyclient_set_network(self.uniffiClonePointer(),
+        FfiConverterOptionString.lower(network),$0
+    )
+}
 }
     
     /**
@@ -778,6 +837,11 @@ public struct ProxyConfig {
      * The host application, e.g. "my-app/2.1.0".
      */
     public var app: String?
+    /**
+     * The transport the host is on at start: "cellular", "wifi", "ethernet"
+     * or "other". Report later changes with `set_network`.
+     */
+    public var network: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -797,7 +861,11 @@ public struct ProxyConfig {
          */sdk: String? = nil, 
         /**
          * The host application, e.g. "my-app/2.1.0".
-         */app: String? = nil) {
+         */app: String? = nil, 
+        /**
+         * The transport the host is on at start: "cellular", "wifi", "ethernet"
+         * or "other". Report later changes with `set_network`.
+         */network: String? = nil) {
         self.publisherId = publisherId
         self.gatewayAddresses = gatewayAddresses
         self.caCertPath = caCertPath
@@ -808,6 +876,7 @@ public struct ProxyConfig {
         self.deviceName = deviceName
         self.sdk = sdk
         self.app = app
+        self.network = network
     }
 }
 
@@ -845,6 +914,9 @@ extension ProxyConfig: Equatable, Hashable {
         if lhs.app != rhs.app {
             return false
         }
+        if lhs.network != rhs.network {
+            return false
+        }
         return true
     }
 
@@ -859,6 +931,7 @@ extension ProxyConfig: Equatable, Hashable {
         hasher.combine(deviceName)
         hasher.combine(sdk)
         hasher.combine(app)
+        hasher.combine(network)
     }
 }
 
@@ -879,7 +952,8 @@ public struct FfiConverterTypeProxyConfig: FfiConverterRustBuffer {
                 deviceId: FfiConverterOptionString.read(from: &buf), 
                 deviceName: FfiConverterOptionString.read(from: &buf), 
                 sdk: FfiConverterOptionString.read(from: &buf), 
-                app: FfiConverterOptionString.read(from: &buf)
+                app: FfiConverterOptionString.read(from: &buf), 
+                network: FfiConverterOptionString.read(from: &buf)
         )
     }
 
@@ -894,6 +968,7 @@ public struct FfiConverterTypeProxyConfig: FfiConverterRustBuffer {
         FfiConverterOptionString.write(value.deviceName, into: &buf)
         FfiConverterOptionString.write(value.sdk, into: &buf)
         FfiConverterOptionString.write(value.app, into: &buf)
+        FfiConverterOptionString.write(value.network, into: &buf)
     }
 }
 
@@ -1223,6 +1298,15 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_meerkly_checksum_method_proxyclient_gateway_id() != 12787) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_meerkly_checksum_method_proxyclient_last_rejection() != 11660) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_meerkly_checksum_method_proxyclient_network() != 13252) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_meerkly_checksum_method_proxyclient_set_network() != 38512) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_meerkly_checksum_method_proxyclient_start() != 7497) {

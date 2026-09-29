@@ -281,6 +281,21 @@ int8_t uniffi_meerkly_fn_method_proxyclient_connected(void*_Nonnull ptr, RustCal
 RustBuffer uniffi_meerkly_fn_method_proxyclient_gateway_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_MEERKLY_FN_METHOD_PROXYCLIENT_LAST_REJECTION
+#define UNIFFI_FFIDEF_UNIFFI_MEERKLY_FN_METHOD_PROXYCLIENT_LAST_REJECTION
+RustBuffer uniffi_meerkly_fn_method_proxyclient_last_rejection(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_MEERKLY_FN_METHOD_PROXYCLIENT_NETWORK
+#define UNIFFI_FFIDEF_UNIFFI_MEERKLY_FN_METHOD_PROXYCLIENT_NETWORK
+RustBuffer uniffi_meerkly_fn_method_proxyclient_network(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_MEERKLY_FN_METHOD_PROXYCLIENT_SET_NETWORK
+#define UNIFFI_FFIDEF_UNIFFI_MEERKLY_FN_METHOD_PROXYCLIENT_SET_NETWORK
+void uniffi_meerkly_fn_method_proxyclient_set_network(void*_Nonnull ptr, RustBuffer network, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_MEERKLY_FN_METHOD_PROXYCLIENT_START
 #define UNIFFI_FFIDEF_UNIFFI_MEERKLY_FN_METHOD_PROXYCLIENT_START
 uint64_t uniffi_meerkly_fn_method_proxyclient_start(void*_Nonnull ptr
@@ -601,6 +616,24 @@ uint16_t uniffi_meerkly_checksum_method_proxyclient_connected(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_MEERKLY_CHECKSUM_METHOD_PROXYCLIENT_GATEWAY_ID
 #define UNIFFI_FFIDEF_UNIFFI_MEERKLY_CHECKSUM_METHOD_PROXYCLIENT_GATEWAY_ID
 uint16_t uniffi_meerkly_checksum_method_proxyclient_gateway_id(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_MEERKLY_CHECKSUM_METHOD_PROXYCLIENT_LAST_REJECTION
+#define UNIFFI_FFIDEF_UNIFFI_MEERKLY_CHECKSUM_METHOD_PROXYCLIENT_LAST_REJECTION
+uint16_t uniffi_meerkly_checksum_method_proxyclient_last_rejection(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_MEERKLY_CHECKSUM_METHOD_PROXYCLIENT_NETWORK
+#define UNIFFI_FFIDEF_UNIFFI_MEERKLY_CHECKSUM_METHOD_PROXYCLIENT_NETWORK
+uint16_t uniffi_meerkly_checksum_method_proxyclient_network(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_MEERKLY_CHECKSUM_METHOD_PROXYCLIENT_SET_NETWORK
+#define UNIFFI_FFIDEF_UNIFFI_MEERKLY_CHECKSUM_METHOD_PROXYCLIENT_SET_NETWORK
+uint16_t uniffi_meerkly_checksum_method_proxyclient_set_network(void
     
 );
 #endif
